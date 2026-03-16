@@ -1,0 +1,32 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.env
+*.db
+
+# Virtual environments
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Node
+node_modules/
+frontend/dist/
+
+# ML model checkpoints
+*.pt
+*.bin
+*.safetensors
+*.ckpt
+
+# OS
+.DS_Store
+Thumbs.db

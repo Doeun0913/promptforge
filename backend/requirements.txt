@@ -1,0 +1,27 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+pydantic>=2.10.0
+httpx>=0.28.0
+
+# ML / NLP
+torch>=2.5.0
+transformers>=4.48.0
+sentence-transformers>=3.4.0
+tiktoken>=0.8.0
+
+# Korean NLP
+konlpy>=0.6.0
+soynlp>=0.0.493
+
+# Evaluation
+rouge-score>=0.1.2
+bert-score>=0.3.13
+
+# Database
+sqlalchemy>=2.0.36
+aiosqlite>=0.20.0
+
+# Utilities
+python-dotenv>=1.0.1
+loguru>=0.7.3
+numpy>=1.26.0
