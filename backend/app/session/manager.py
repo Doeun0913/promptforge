@@ -13,6 +13,18 @@ class TurnRecord:
     compressed_prompt: str
     response: str
     embedding: list[float] = field(default_factory=list)
+    emotion_snapshot: dict[str, Any] = field(default_factory=dict)
+    """해당 턴의 감정 상태 직렬화 dict.
+    session 모듈이 pipeline 모듈에 의존하지 않도록 EmotionSnapshot을 직접 임포트하지 않고
+    dict로 저장한다.
+
+    저장 키 (Phase 2에서 stage1이 채움):
+        turn_index       : int
+        sentiment        : str  ("positive" | "negative" | "neutral")
+        sentiment_score  : float
+        emotions         : list[str]
+        frustration_streak : int
+    """
 
 
 @dataclass

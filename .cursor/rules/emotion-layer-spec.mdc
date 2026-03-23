@@ -1,0 +1,126 @@
+---
+description: EmotionLayer 확장 설계 명세 - 감정 극성 분류, 의도 분리, 멀티턴 감정 추적
+alwaysApply: false
+---
+
+# EmotionLayer 확장 명세 (Phase 1 ~ 2)
+
+## 개요
+
+사용자 프롬프트에서 감정 신호를 분리하고, 부정 감정 감지 시 이전 답변 방향이 틀렸을 가능성을
+파이프라인 하위 스테이지에 자동으로 전달하는 시스템.
+
+---
+
+## Phase 1: 데이터 구조 (context.py)
+
+### 추가된 타입
+
+```python
+class Sentiment(str, Enum):
+    POSITIVE = "positive"
+    NEGATIVE = "negative"
+    NEUTRAL  = "neutral"
+
+@dataclass
+class EmotionSnapshot:
+    turn_index: int
+    emotions: list[str]
+    sentiment: Sentiment
+    sentiment_score: float   # -1.0 ~ +1.0
+    expressions: list[str]
+```
+
+### EmotionLayer 신규 필드
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `sentiment` | `Sentiment` | 감정 극성 (POSITIVE / NEGATIVE / NEUTRAL) |
+| `sentiment_score` | `float` | 극성 점수 -1.0 ~ +1.0 |
+| `intent_text` | `str` | 감정 제거 후 순수 의도 텍스트 |
+| `requires_reanalysis` | `bool` | 부정 감정 감지 시 재분석 필요 플래그 |
+| `reanalysis_reason` | `str \| None` | 재분석 사유 (프롬프트 방향 수정 맥락에 삽입) |
+| `emotion_history` | `list[EmotionSnapshot]` | 멀티턴 감정 변화 누적 이력 |
+| `frustration_streak` | `int` | 연속 NEGATIVE 턴 수 (2+ 시 적극 개입 전략 트리거) |
+
+---
+
+## sentiment_score 계산 기준
+
+### 공식
+
+```
+sentiment_score = P(positive) - P(negative)
+```
+
+- BERT 계열 3-class 분류 (positive / negative / neutral) 의 softmax 출력에서 도출
+- 범위: -1.0 (완전 부정) ~ 0.0 (중립) ~ +1.0 (완전 긍정)
+- 이 방식은 VADER 등 주요 감정 분석 프레임워크에서 공통으로 사용하는 표준
+
+### 예시
+
+| 입력 | P(pos) | P(neg) | score | 판정 |
+|------|--------|--------|-------|------|
+| "정말 감사합니다!" | 0.90 | 0.05 | +0.85 | POSITIVE |
+| "아씨 왜 자꾸 틀려" | 0.05 | 0.88 | -0.83 | NEGATIVE |
+| "파이썬 코드 짜줘" | 0.30 | 0.20 | +0.10 | NEUTRAL |
+
+### 모델 앙상블 전략 (Phase 2)
+
+```
+sentiment_score = 0.6 × KcBERT_score + 0.4 × KLUE_score
+```
+
+- **KcBERT**: 한국 SNS/커뮤니티 데이터 학습 → 구어체·비속어·감탄사 인식 강함
+- **KLUE-BERT**: 표준 한국어 학습 → 격식체·비즈니스 표현 인식 강함
+- threshold는 AI Hub 감성대화 / NIKL 데이터셋으로 튜닝 필요 (현재 예시값: -0.3)
+
+---
+
+## Phase 2: 감정 기반 의도 재분석 흐름
+
+### 재분석 트리거 조건
+
+```
+requires_reanalysis = True  if:
+  1. sentiment == NEGATIVE  AND
+  2. 이전 턴 sentiment != NEGATIVE  (감정 변화 감지)
+     OR frustration_streak >= 2     (연속 부정)
+```
+
+### 파이프라인 처리 흐름
+
+```
+[S1: Emotion] ──→ requires_reanalysis=True
+                        │
+                        ▼
+[Stage N: Rewriter / Structurer]
+  → 프롬프트에 방향 수정 맥락 자동 삽입
+  → reanalysis_reason 활용
+    예: "이전 답변에 불만족, 다른 접근 방식으로 재시도"
+```
+
+### TurnRecord 감정 스냅샷 (session/manager.py)
+
+`TurnRecord.emotion_snapshot: dict[str, Any]`
+- 세션 모듈을 파이프라인 모듈에 비의존적으로 유지하기 위해 dict 직렬화
+- 저장 키: `turn_index`, `sentiment`, `sentiment_score`, `emotions`, `frustration_streak`
+
+---
+
+## 파일별 변경 범위
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `pipeline/context.py` | Sentiment enum, EmotionSnapshot, EmotionLayer 필드 추가 |
+| `models/emotion_classifier.py` | EmotionPrediction에 sentiment, sentiment_score 추가 |
+| `pipeline/stage1_emotion.py` | intent_text 초기화, TODO 구체화 |
+| `session/manager.py` | TurnRecord에 emotion_snapshot dict 추가 |
+
+---
+
+## 향후 고려 사항
+
+- **threshold 자동 튜닝**: 한국어 감정 레이블 데이터셋으로 최적 경계값 학습
+- **감정 강도(severity)**: MILD / MODERATE / SEVERE 3단계 세분화 (frustration_streak로 대체 가능)
+- **문화적 맥락**: 한국어 간접 불만 표현 ("그냥요...", "괜찮아요") 감지를 위한 별도 규칙
