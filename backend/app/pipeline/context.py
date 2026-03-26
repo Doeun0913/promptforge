@@ -152,9 +152,17 @@ class PipelineContext:
     cache_hit: bool = False
     cached_response: str | None = None
 
-    # --- Token counts ---
+    # --- Token counts (target_model 기준) ---
     original_input_tokens: int = 0
     compressed_input_tokens: int = 0
+
+    # --- Multi-model comparison ---
+    compare_models: list[str] = field(default_factory=list)
+    """비교할 모델 ID 목록. 비어 있으면 target_model만 카운팅."""
+
+    multi_model_tokens: dict[str, Any] = field(default_factory=dict)
+    """모델별 토큰/비용 결과. {model_id: ModelTokenResult}
+    Orchestrator가 파이프라인 시작/종료 시 채운다."""
 
     # --- Misc metadata ---
     metadata: dict[str, Any] = field(default_factory=dict)
