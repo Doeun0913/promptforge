@@ -30,3 +30,6 @@ frontend/dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# Dynamic slang cache (regenerated at runtime)
+backend/data/korean_slang_cache.json

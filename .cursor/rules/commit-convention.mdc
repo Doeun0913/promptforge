@@ -1,0 +1,48 @@
+---
+description: Git 커밋 메시지 컨벤션 - 커밋 시 항상 이 규칙을 따른다
+alwaysApply: true
+---
+
+# Git Commit Convention (Conventional Commits)
+
+## 커밋 메시지 형식
+
+```
+<type>(<scope>): <subject>
+```
+
+## Type 목록
+
+| Type | 설명 | 예시 |
+|------|------|------|
+| `feat` | 새로운 기능 추가 | `feat(pipeline): 감정 분류 스테이지 구현` |
+| `fix` | 버그 수정 | `fix(korean): 조사 파싱 오류 수정` |
+| `refactor` | 기능 변경 없는 코드 개선 | `refactor(rewriter): 의도 추출 로직 분리` |
+| `test` | 테스트 추가/수정 | `test(gate): 신뢰도 게이트 단위 테스트 추가` |
+| `docs` | 문서 변경 | `docs: README 아키텍처 다이어그램 업데이트` |
+| `style` | 포맷팅, 세미콜론 등 코드 의미 변경 없음 | `style: black 포맷터 적용` |
+| `perf` | 성능 개선 | `perf(tokenizer): 토큰 카운팅 캐시 적용` |
+| `chore` | 빌드, 설정, 패키지 등 | `chore: requirements.txt 의존성 업데이트` |
+| `ci` | CI/CD 설정 | `ci: GitHub Actions 워크플로우 추가` |
+
+## Scope (선택)
+
+프로젝트 주요 스코프:
+- `pipeline` - 파이프라인 스테이지 (stage0~15)
+- `korean` - 한국어 전처리
+- `emotion` - 감정 분류/분리
+- `rewriter` - 의도 재작성
+- `output` - 출력 필터/후처리
+- `api` - FastAPI 라우트/미들웨어
+- `frontend` - React UI
+- `model` - ML 모델
+- `session` - 세션/멀티턴 관리
+- `db` - 데이터베이스
+- `config` - 설정
+
+## 규칙
+
+1. subject는 한국어로 작성, 50자 이내
+2. 명령문 어조 사용 ("추가", "수정", "개선" 등)
+3. 끝에 마침표 없음
+4. 하나의 커밋은 하나의 논리적 변경만 포함
